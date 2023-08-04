@@ -9,9 +9,10 @@ class Discriminator(nn.Module):
         super(Discriminator,self).__init__()
         self.ndf = ndf
         self.ngpu = ngpu
+        self.input_channel = 256
 
         self.model = nn.Sequential(
-            nn.Conv2d(26, ndf, 4, 1, 0, bias=False),
+            nn.Conv2d(self.input_channel, ndf, 4, 1, 0, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. ``(ndf) x 32 x 32``
             # state size. ``(ndf*2) x 16 x 16``
@@ -39,15 +40,15 @@ class Discriminator(nn.Module):
 
         self.avgPool = nn.AdaptiveAvgPool2d([1,1])
 
-        self.pre_conv_1d_52 = nn.Conv2d(52,26,1)
-        self.pre_conv_1d_13 = nn.Conv2d(13,26,1)
+        self.pre_conv_1d_512 = nn.Conv2d(512,256,1)
+        self.pre_conv_1d_128 = nn.Conv2d(128,256,1)
 
     def forward(self,input):
         input_channel = list(input.size())[1]
-        if(input_channel == 52):
-            input = self.pre_conv_1d_52(input)
-        if(input_channel == 13):
-            input = self.pre_conv_1d_13(input)
+        if(input_channel == 512):
+            input = self.pre_conv_1d_512(input)
+        if(input_channel == 128):
+            input = self.pre_conv_1d_128(input)
 
         out = self.model(input)
         print(out.size())
@@ -56,7 +57,11 @@ class Discriminator(nn.Module):
 
     
     
-input = torch.randn(1,13,13,512)
+input = torch.randn(1,128,52,52)
+
+#input dim : (128,52,52)
+#         (256,26,26)
+#         (512,13,13)
 
 model = Discriminator(ngpu,ndf)
 

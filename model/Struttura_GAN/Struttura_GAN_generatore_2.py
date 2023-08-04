@@ -8,10 +8,10 @@ class Generator(nn.Module):
         self.ngpu = ngpu
         self.ngf = ngf
 
-        self.input_channel = 14
-        self.out_channel = 26
-        self.output_size = torch.Size([26,256])
-        self.out_ch = 26
+        self.input_channel = 256
+        self.out_channel = 256
+        self.output_size = torch.Size([26,26])
+        #self.out_ch = 26
 
         self.transpose = nn.Sequential(
             nn.ConvTranspose2d(self.input_channel , self.ngf * 4, 4, 1, 0, bias=False),
@@ -34,11 +34,11 @@ class Generator(nn.Module):
             nn.Tanh()
         )
 
-        self.pre_conv1d_28 = nn.Conv2d(28, 14,1)
-        self.pre_conv1d_7 = nn.Conv2d(7, 14,1)
+        self.pre_conv1d_512 = nn.Conv2d(512, 256,1)
+        self.pre_conv1d_128 = nn.Conv2d(128, 256,1)
 
-        self.post_conv1d_to_52 = nn.Conv2d(26, 52, 1)
-        self.post_conv1d_to_13 = nn.Conv2d(26, 13, 1)
+        self.post_conv1d_to_512 = nn.Conv2d(256, 512, 1)
+        self.post_conv1d_to_128 = nn.Conv2d(256, 128, 1)
 
     #def pre_conv1d(self,input,channel_in):
     #    return nn.Conv2d(channel_in, self.out_channel,1)(input)
@@ -60,21 +60,21 @@ class Generator(nn.Module):
         #dim2 = torch.Size([10,10,512])
         
 
-        if input_size == torch.Size([28,28,128]):
+        if input_size == torch.Size([128,28,28]):
             #self.input_channel = list(input.size())[1]
             #input = self.pre_conv1d(input)
             #in_ch = list(input.size())[1]
-            input = self.pre_conv1d_28(input)
-            self.output_size = torch.Size([52,128])
+            input = self.pre_conv1d_128(input)
+            self.output_size = torch.Size([52,52])
             #self.out_channel = 52
             reduce = True
 
-        if input_size == torch.Size([7,7,512]):
+        if input_size == torch.Size([512,7,7]):
             #self.input_channel = list(input.size())[1]
             #input = self.pre_conv1d(input)
             #in_ch = list(input.size())[1]
-            input = self.pre_conv1d_7(input)
-            self.output_size = torch.Size([13,512])
+            input = self.pre_conv1d_512(input)
+            self.output_size = torch.Size([13,13])
             #self.out_channel = 20
             up = True
         
@@ -84,18 +84,27 @@ class Generator(nn.Module):
         #print(output.size()," ciao2")
 
         if(reduce):
-            output = self.post_conv1d_to_52(output)
+            output = self.post_conv1d_to_128(output)
         if(up):
-            output = self.post_conv1d_to_13(output)
-        #print(output.size())
+            output = self.post_conv1d_to_512(output)
+        print(output.size())
         #print(self.output_size)
         return nn.Upsample(size = self.output_size)(output)
     
 
 ndf = 64
-input = torch.randn(0,7,7,512)
+input = torch.randn(0,128,28,28)
+#input : (128,28,28)
+#         (256,14,14)
+#         (512,7,7)
+
+#target : (128,52,52)
+#         (256,26,26)
+#         (512,13,13)
 
 model = Generator(1,ndf)
+
+
 
 output = model(input)
 
