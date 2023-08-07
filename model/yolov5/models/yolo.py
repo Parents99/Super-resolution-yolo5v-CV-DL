@@ -107,6 +107,8 @@ class Segment(Detect):
 
 
 class BaseModel(nn.Module):
+    real_feature = []
+    input_feature = []
     # YOLOv5 base model
     def forward(self, x, profile=False, visualize=False):
         return self._forward_once(x, profile, visualize)  # single-scale inference, train
@@ -120,9 +122,26 @@ class BaseModel(nn.Module):
                 self._profile_one_layer(m, x, dt)
             x = m(x)  # run
             y.append(x if m.i in self.save else None)  # save output
-            if visualize and m.i == 9:
-                feature_visualization(x, m.type, m.i)
-                # LOGGER.info(f'funziona')
+            if visualize: # estrazione delle feature intermedie
+                if m.i == 4 and x.size() == torch.Size([1, 128, 52, 52]):
+                    if len(self.real_feature) == 3:
+                        self.real_feature = [] # reset list
+                    self.real_feature.append(x)
+                elif m.i == 4 and x.size() == torch.Size([1, 128, 28, 28]):
+                    if len(self.input_feature) == 3:
+                        self.input_feature = [] # reset list
+                    self.input_feature.append(x)
+                elif m.i == 6 and x.size() == torch.Size([1, 256, 26, 26]):
+                    self.real_feature.append(x)
+                elif m.i == 6 and x.size() == torch.Size([1, 256, 14, 14]):
+                    self.input_feature.append(x)
+                elif m.i == 9 and x.size() == torch.Size([1, 512, 13, 13]):
+                    self.real_feature.append(x)
+                elif m.i == 9 and x.size() == torch.Size([1, 512, 7, 7]):
+                    self.input_feature.append(x)
+                    # feature_visualization(x, m.type, m.i)
+                    # print(self.input_feature[1].size())
+        # print(len(self.real_feature), len(self.input_feature))
         return x
 
     def _profile_one_layer(self, m, x, dt):
@@ -204,7 +223,7 @@ class DetectionModel(BaseModel):
         self.info()
         LOGGER.info('')
 
-    def forward(self, x, augment=False, profile=False, visualize=True):
+    def forward(self, x, augment=False, profile=False, visualize=True): #visualize per stampare le feature
         if augment:
             return self._forward_augment(x)  # augmented inference, None
         return self._forward_once(x, profile, visualize)  # single-scale inference, train
