@@ -50,6 +50,7 @@ from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
 import torch.utils.data
 import torchvision.transforms.functional as F
+from codecarbon import OfflineEmissionsTracker
 
 @smart_inference_mode()
 def run(
@@ -124,7 +125,9 @@ def run(
 
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                          shuffle=True)
-
+    
+    tracker = OfflineEmissionsTracker(country_iso_code="CAN") #codecarbon
+    tracker.start() #codecarbon
     for epoch in range(num_epochs):
         # For each batch in the dataloader
         # for i, data in enumerate(dataloader, 0):
@@ -231,7 +234,8 @@ def run(
                     # Print time (inference-only)
                     LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
                     counter += 1
-
+    tracker.stop()
+    
     # Print results
     t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
     LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
