@@ -29,6 +29,10 @@ from utils.plots import feature_visualization
 from utils.torch_utils import (fuse_conv_and_bn, initialize_weights, model_info, profile, scale_img, select_device,
                                time_sync)
 
+
+from models.Struttura_GAN_generatore_2 import Generator
+from models.Struttura_GAN_discriminatore import Discriminator
+
 try:
     import thop  # for FLOPs computation
 except ImportError:
@@ -107,13 +111,27 @@ class Segment(Detect):
 
 
 class BaseModel(nn.Module):
+    generator = Generator(1,64)#.to('cuda')
+    discriminator = Discriminator(1,64)#.to('cuda')
+    loss = nn.BCELoss()
+    gen_optimizer = torch.optim.Adam(generator.parameters(), lr=0.01) ###### decidere valori parametri. + aggiungerne altri es. beta
+    discr_optimizer = torch.optim.Adam(discriminator.parameters(), lr=0.01)
+     #label = torch.full((b_size,), real_label, dtype= torch.float, device = device) #b_size dovrebbe essere il batch size
+    
+    real_label = 1
+    fake_label = 0
+
     real_feature = []
     input_feature = []
+
+    epoch_counter = 0 #contatore per le epoche (nell'ultima epoca salviamo i pesi della gan)
+
     # YOLOv5 base model
     def forward(self, x, profile=False, visualize=False):
         return self._forward_once(x, profile, visualize)  # single-scale inference, train
 
     def _forward_once(self, x, profile=False, visualize=True): # visualize a true se si vogliono stampare le feature map in formato immagine
+
         y, dt = [], []  # outputs
         for m in self.model:
             if m.f != -1:  # if not from previous layer
@@ -142,7 +160,17 @@ class BaseModel(nn.Module):
                     # feature_visualization(x, m.type, m.i)
                     # print(self.input_feature[1].size())
         # print(len(self.real_feature), len(self.input_feature))
+
+        
+       
+        #self.do_epoch()
+
         return x
+    
+    def do_epoch(self):
+        
+        
+        return 
 
     def _profile_one_layer(self, m, x, dt):
         c = m == self.model[-1]  # is final layer, copy input as inplace fix
