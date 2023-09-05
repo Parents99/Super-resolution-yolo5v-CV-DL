@@ -138,7 +138,7 @@ def run(
                     # Format batch
                     im = data[0].to(model.device)
                     b_size = im.size(0) #dimensione del batch
-                    print(b_size)
+                    #print(b_size)
                     if counter == 1: # eseguita l'inferenza per l'immagine 416x416 si ridimensiona il tensore a 224x224
                         im = F.resize(im,224) # resize
 

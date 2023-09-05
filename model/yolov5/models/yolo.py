@@ -30,6 +30,8 @@ from utils.torch_utils import (fuse_conv_and_bn, initialize_weights, model_info,
                                time_sync)
 
 
+import matplotlib.pyplot as plt
+
 from models.Struttura_GAN_generatore_2 import Generator
 from models.Struttura_GAN_discriminatore import Discriminator
 
@@ -111,12 +113,16 @@ class Segment(Detect):
 
 
 class BaseModel(nn.Module):
-    generator = Generator(1,64)#.to('cuda')
+    generator_path = "C:\..\generator.pt"
+    discriminator_path = "C:\..\discriminator.pt"
+    graph_path = "C:\.."
+    batch_size = 3
+    generator = Generator(1,64)#.to()
     discriminator = Discriminator(1,64)#.to('cuda')
     loss = nn.BCELoss()
     gen_optimizer = torch.optim.Adam(generator.parameters(), lr=0.01) ###### decidere valori parametri. + aggiungerne altri es. beta
     discr_optimizer = torch.optim.Adam(discriminator.parameters(), lr=0.01)
-     #label = torch.full((b_size,), real_label, dtype= torch.float, device = device) #b_size dovrebbe essere il batch size
+    # #b_size dovrebbe essere il batch size
     
     real_label = 1
     fake_label = 0
@@ -124,7 +130,10 @@ class BaseModel(nn.Module):
     real_feature = []
     input_feature = []
 
-    epoch_counter = 0 #contatore per le epoche (nell'ultima epoca salviamo i pesi della gan)
+    G_losses = []
+    D_losses = []
+
+    epoch_counter = 1 #contatore per le epoche (nell'ultima epoca salviamo i pesi della gan)
 
     # YOLOv5 base model
     def forward(self, x, profile=False, visualize=False):
@@ -139,38 +148,88 @@ class BaseModel(nn.Module):
             if profile:
                 self._profile_one_layer(m, x, dt)
             x = m(x)  # run
+            #print(x.size())
             y.append(x if m.i in self.save else None)  # save output
             if visualize: # estrazione delle feature intermedie
-                if m.i == 4 and x.size() == torch.Size([1, 128, 52, 52]):
+                if m.i == 4 and x.size() == torch.Size([self.batch_size, 128, 52, 52]):
                     if len(self.real_feature) == 3:
                         self.real_feature = [] # reset list
                     self.real_feature.append(x)
-                elif m.i == 4 and x.size() == torch.Size([1, 128, 28, 28]):
+                elif m.i == 4 and x.size() == torch.Size([self.batch_size, 128, 28, 28]):
                     if len(self.input_feature) == 3:
                         self.input_feature = [] # reset list
                     self.input_feature.append(x)
-                elif m.i == 6 and x.size() == torch.Size([1, 256, 26, 26]):
+                elif m.i == 6 and x.size() == torch.Size([self.batch_size, 256, 26, 26]):
                     self.real_feature.append(x)
-                elif m.i == 6 and x.size() == torch.Size([1, 256, 14, 14]):
+                elif m.i == 6 and x.size() == torch.Size([self.batch_size, 256, 14, 14]):
                     self.input_feature.append(x)
-                elif m.i == 9 and x.size() == torch.Size([1, 512, 13, 13]):
+                elif m.i == 9 and x.size() == torch.Size([self.batch_size, 512, 13, 13]):
                     self.real_feature.append(x)
-                elif m.i == 9 and x.size() == torch.Size([1, 512, 7, 7]):
+                elif m.i == 9 and x.size() == torch.Size([self.batch_size, 512, 7, 7]):
                     self.input_feature.append(x)
+                    self.do_epoch()
                     # feature_visualization(x, m.type, m.i)
                     # print(self.input_feature[1].size())
         # print(len(self.real_feature), len(self.input_feature))
 
-        
-       
-        #self.do_epoch()
-
         return x
     
     def do_epoch(self):
+        for i in range(len(self.real_feature)):
+            #train discriminator with real batch
+            self.discriminator.zero_grad()
+            label = torch.full((self.b_size,), self.real_label, dtype= torch.float, device = device)
+            output = self.discriminator(self.real_feature[i]).view(-1)
+            errD_real = self.loss(output,label)
+            errD_real.backward()
+            D_x = output.mean().item()
+
+            #train generator wwith all-fake batch
+            fake = self.generator(self.input_feature[i]).view(-1)
+            label.fill_(self.fake_label)
+            output = self.discriminator(fake.detach()).view(-1)
+            errD_fake = self.loss(output, label)
+            errD_fake.backward()
+            D_G_z1 = output.mean().item()
+
+            errD = errD_real + errD_fake
+
+            self.discr_optimizer.step()
+
+            self.generator.zero_grad()
+            label.fill_(self.real_label)
+
+            output = self.discriminator(fake).view(-1)
+
+            errG = self.loss(output,label)
+
+            errG.backward()
+            D_G_z2 = output.mean().item()
+
+            self.gen_optimizer.step() 
+
+            self.G_losses.append(errG.item())
+            self.D_losses.append(errD.item())
+
+            print("Loss_D : {} , Loss_G : {}".format(self.D_losses, self.G_losses))
+
+            self.epoch_counter += 1
+
+            if self.epoch_counter > 5 :
+                torch.save(self.generator.state_dict(), self.generator_path)
+                torch.save(self.discriminator.state_dict(), self.discriminator_path )
+                plt.figure(figsize=(10,5))
+                plt.title("Generator loss and Discriminator loss")
+                plt.plot(self.G_losses, label = "G")
+                plt.plot(self.D_losses, label = "D")
+                plt.legend()
+                plt.show()
+                plt.savefig(self.graph_path)
+
+
+
         
-        
-        return 
+         
 
     def _profile_one_layer(self, m, x, dt):
         c = m == self.model[-1]  # is final layer, copy input as inplace fix
