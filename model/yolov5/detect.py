@@ -99,7 +99,7 @@ def run(
     imgsz = check_img_size(imgsz, s=stride)  # check image size
 
     # Dataloader
-    bs = 3  # batch_size
+    bs = 16  # batch_size
 
     # Number of workers for dataloader
     workers = 2

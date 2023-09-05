@@ -117,12 +117,18 @@ class BaseModel(nn.Module):
     generator_path = "C:\\Users\\cardo\\Desktop\\Uni\\Magistrale\\CVDL\\ProjectCVDL\\SRyolov5\\model\\GAN\\generator.pt"
     discriminator_path = "C:\\Users\\cardo\\Desktop\\Uni\\Magistrale\\CVDL\\ProjectCVDL\\SRyolov5\\model\\GAN\\discriminator.pt"
     graph_path = "C:\\Users\\cardo\\Desktop\\Uni\\Magistrale\\CVDL\\ProjectCVDL\\SRyolov5\\model\\GAN\\GD_loss.png"
-    batch_size = 3
+    batch_size = 16 # dimensione batch
+    epoch = 5 # numero delle epoche
+    size_dataset = 2850 #dimensione dataset
     generator = Generator(1,64).to(device)
     discriminator = Discriminator(1,64).to(device)
     loss = nn.BCELoss()
-    gen_optimizer = torch.optim.Adam(generator.parameters(), lr=0.01) ###### decidere valori parametri. + aggiungerne altri es. beta
-    discr_optimizer = torch.optim.Adam(discriminator.parameters(), lr=0.01)
+    # Learning rate for optimizers
+    lr = 0.0002
+    # Beta1 hyperparameter for Adam optimizers
+    beta1 = 0.5
+    gen_optimizer = torch.optim.Adam(generator.parameters(), lr=lr, betas=(beta1, 0.999)) ###### decidere valori parametri. + aggiungerne altri es. beta
+    discr_optimizer = torch.optim.Adam(discriminator.parameters(), lr=lr, betas=(beta1, 0.999))
     # #b_size dovrebbe essere il batch size
     
     real_label = 1
@@ -134,7 +140,8 @@ class BaseModel(nn.Module):
     G_losses = []
     D_losses = []
 
-    epoch_counter = 1 #contatore per le epoche (nell'ultima epoca salviamo i pesi della gan)
+    batch_counter = 1 #contatore per le epoche (nell'ultima epoca salviamo i pesi della gan)
+    epoch_counter = 1
 
     # YOLOv5 base model
     def forward(self, x, profile=False, visualize=False):
@@ -176,6 +183,7 @@ class BaseModel(nn.Module):
         return x
     
     def do_epoch(self):
+        
         for i in range(len(self.real_feature)):
             #train discriminator with real batch
             self.discriminator.zero_grad()
@@ -212,24 +220,28 @@ class BaseModel(nn.Module):
             #D_G_z2 = output.mean().item()
 
             self.gen_optimizer.step() 
-
+            
             self.G_losses.append(errG.item())
             self.D_losses.append(errD.item())
 
-            print("Loss_D : {} , Loss_G : {}".format(errD, errG))
+            print("Epoch: {}/{} , Loss_D : {} , Loss_G : {}".format(self.epoch_counter, self.epoch , errD, errG))
 
+        self.batch_counter += 1
+        if self.batch_counter == int(self.size_dataset/self.batch_size)+1:
             self.epoch_counter += 1
+            self.batch_counter = 1            
 
-            if self.epoch_counter > 5 :
-                torch.save(self.generator.state_dict(), self.generator_path)
-                torch.save(self.discriminator.state_dict(), self.discriminator_path )
-                plt.figure(figsize=(10,5))
-                plt.title("Generator loss and Discriminator loss")
-                plt.plot(self.G_losses, label = "G")
-                plt.plot(self.D_losses, label = "D")
-                plt.legend()
-                plt.show()
-                plt.savefig(self.graph_path)
+        if self.epoch_counter > self.epoch :
+            print("Saving results...")
+            torch.save(self.generator.state_dict(), self.generator_path)
+            torch.save(self.discriminator.state_dict(), self.discriminator_path )
+            plt.figure(figsize=(10,5))
+            plt.title("Generator loss and Discriminator loss")
+            plt.plot(self.G_losses, label = "G")
+            plt.plot(self.D_losses, label = "D")
+            plt.legend()
+            plt.show()
+            plt.savefig(self.graph_path)
 
 
 
