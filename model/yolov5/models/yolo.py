@@ -113,12 +113,13 @@ class Segment(Detect):
 
 
 class BaseModel(nn.Module):
-    generator_path = "C:\..\generator.pt"
-    discriminator_path = "C:\..\discriminator.pt"
-    graph_path = "C:\.."
+    device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
+    generator_path = "C:\\Users\\cardo\\Desktop\\Uni\\Magistrale\\CVDL\\ProjectCVDL\\SRyolov5\\model\\GAN\\generator.pt"
+    discriminator_path = "C:\\Users\\cardo\\Desktop\\Uni\\Magistrale\\CVDL\\ProjectCVDL\\SRyolov5\\model\\GAN\\discriminator.pt"
+    graph_path = "C:\\Users\\cardo\\Desktop\\Uni\\Magistrale\\CVDL\\ProjectCVDL\\SRyolov5\\model\\GAN\\GD_loss.png"
     batch_size = 3
-    generator = Generator(1,64)#.to()
-    discriminator = Discriminator(1,64)#.to('cuda')
+    generator = Generator(1,64).to(device)
+    discriminator = Discriminator(1,64).to(device)
     loss = nn.BCELoss()
     gen_optimizer = torch.optim.Adam(generator.parameters(), lr=0.01) ###### decidere valori parametri. + aggiungerne altri es. beta
     discr_optimizer = torch.optim.Adam(discriminator.parameters(), lr=0.01)
@@ -178,19 +179,23 @@ class BaseModel(nn.Module):
         for i in range(len(self.real_feature)):
             #train discriminator with real batch
             self.discriminator.zero_grad()
-            label = torch.full((self.b_size,), self.real_label, dtype= torch.float, device = device)
+            label = torch.full((self.batch_size,), self.real_label, dtype= torch.float, device = self.device)
             output = self.discriminator(self.real_feature[i]).view(-1)
             errD_real = self.loss(output,label)
+            errD_real = torch.tensor(errD_real,requires_grad=True) 
             errD_real.backward()
-            D_x = output.mean().item()
+            #D_x = output.mean().item()
 
             #train generator wwith all-fake batch
-            fake = self.generator(self.input_feature[i]).view(-1)
+            #print(self.input_feature[i].size())
+            fake = self.generator(self.input_feature[i])
             label.fill_(self.fake_label)
+            #print(fake.size())
             output = self.discriminator(fake.detach()).view(-1)
             errD_fake = self.loss(output, label)
+            errD_fake = torch.tensor(errD_fake,requires_grad=True)
             errD_fake.backward()
-            D_G_z1 = output.mean().item()
+            #D_G_z1 = output.mean().item()
 
             errD = errD_real + errD_fake
 
@@ -202,16 +207,16 @@ class BaseModel(nn.Module):
             output = self.discriminator(fake).view(-1)
 
             errG = self.loss(output,label)
-
+            errG = torch.tensor(errG,requires_grad=True)
             errG.backward()
-            D_G_z2 = output.mean().item()
+            #D_G_z2 = output.mean().item()
 
             self.gen_optimizer.step() 
 
             self.G_losses.append(errG.item())
             self.D_losses.append(errD.item())
 
-            print("Loss_D : {} , Loss_G : {}".format(self.D_losses, self.G_losses))
+            print("Loss_D : {} , Loss_G : {}".format(errD, errG))
 
             self.epoch_counter += 1
 

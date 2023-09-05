@@ -19,7 +19,7 @@ class Generator(nn.Module):
             nn.ReLU(True),
             
             nn.ConvTranspose2d(self.ngf * 4, self.ngf * 4, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(self.ngf * 2),
+            nn.BatchNorm2d(self.ngf * 4),
             nn.ReLU(True),
             
             nn.ConvTranspose2d(self.ngf * 4, self.ngf * 2, 4, 1, 1, bias=False),
@@ -80,6 +80,7 @@ class Generator(nn.Module):
         
         #print(self.output_size)
         #print(input.size()," ciao")
+        #print(input.size())
         output = self.transpose(input)
         #print(output.size()," ciao2")
 
@@ -108,4 +109,4 @@ model = Generator(1,ndf)
 
 output = model(input)
 
-print(output.size())
+#print(output.size())

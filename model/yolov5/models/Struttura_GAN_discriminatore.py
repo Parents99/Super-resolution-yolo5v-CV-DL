@@ -44,7 +44,11 @@ class Discriminator(nn.Module):
         self.pre_conv_1d_128 = nn.Conv2d(128,256,1)
 
     def forward(self,input):
-        input_channel = list(input.size())[1]
+        #input_channel = list(input.size())
+        #print("questo qui"+str(input_channel))
+        input_channel = input.size()
+        #print(input_channel)
+        input_channel = input_channel[1]
         if(input_channel == 512):
             input = self.pre_conv_1d_512(input)
         if(input_channel == 128):
