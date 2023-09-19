@@ -54,7 +54,7 @@ import matplotlib.pyplot as plt
 import torchvision.utils as vutils
 import numpy as np
 
-# from codecarbon import EmissionsTracker
+from codecarbon import EmissionsTracker
 
 @smart_inference_mode()
 def run(
@@ -99,13 +99,13 @@ def run(
     imgsz = check_img_size(imgsz, s=stride)  # check image size
 
     # Dataloader
-    bs = 16  # batch_size
+    bs = 2  # batch_size
 
     # Number of workers for dataloader
     workers = 2
 
     # Number of training epochs for GAN
-    num_epochs = 5
+    num_epochs = 10
 
     dataset = datasets.ImageFolder(source,
                                transform=transforms.Compose([
@@ -124,8 +124,8 @@ def run(
     seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
 
 
-    #tracker = EmissionsTracker(project_name="GAN-Training") #codecarbon
-    #tracker.start() #codecarbon
+    tracker = EmissionsTracker(project_name="GAN-Training") #codecarbon
+    tracker.start() #codecarbon
     for epoch in range(num_epochs):
         # For each batch in the dataloader
         for i, data in enumerate(dataloader, 0):
@@ -156,7 +156,7 @@ def run(
                 with dt[2]:
                     pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
                     counter += 1 #incremento del counter per eseguire l'inferenza sull'immagine 224x224 o alla prossima immagine
-    #tracker.stop()
+    tracker.stop()
     
 def parse_opt():
     parser = argparse.ArgumentParser()

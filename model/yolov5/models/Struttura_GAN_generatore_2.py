@@ -31,7 +31,7 @@ class Generator(nn.Module):
             nn.ReLU(True),
 
             nn.ConvTranspose2d(self.ngf, self.out_channel, 1,1,1, bias = False),
-            nn.Tanh()
+            nn.SiLU(True)
         )
 
         self.pre_conv1d_512 = nn.Conv2d(512, 256,1)

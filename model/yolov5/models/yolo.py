@@ -117,20 +117,20 @@ class BaseModel(nn.Module):
     generator_path = "C:\\Users\\cardo\\Desktop\\Uni\\Magistrale\\CVDL\\ProjectCVDL\\SRyolov5\\model\\GAN\\generator.pt"
     discriminator_path = "C:\\Users\\cardo\\Desktop\\Uni\\Magistrale\\CVDL\\ProjectCVDL\\SRyolov5\\model\\GAN\\discriminator.pt"
     graph_path = "C:\\Users\\cardo\\Desktop\\Uni\\Magistrale\\CVDL\\ProjectCVDL\\SRyolov5\\model\\GAN\\GD_loss.png"
-    batch_size = 16 # dimensione batch
-    epoch = 5 # numero delle epoche
-    size_dataset = 2850 #dimensione dataset
+    batch_size = 2 # dimensione batch
+    epoch = 10 # numero delle epoche
+    size_dataset = 10 #dimensione dataset
     generator = Generator(1,64).to(device)
     discriminator = Discriminator(1,64).to(device)
     loss = nn.BCELoss()
-    # Learning rate for optimizers
+        # Learning rate for optimizers
     lr = 0.0002
-    # Beta1 hyperparameter for Adam optimizers
+        # Beta1 hyperparameter for Adam optimizers
     beta1 = 0.5
     gen_optimizer = torch.optim.Adam(generator.parameters(), lr=lr, betas=(beta1, 0.999)) ###### decidere valori parametri. + aggiungerne altri es. beta
     discr_optimizer = torch.optim.Adam(discriminator.parameters(), lr=lr, betas=(beta1, 0.999))
-    # #b_size dovrebbe essere il batch size
-    
+        # #b_size dovrebbe essere il batch size
+        
     real_label = 1
     fake_label = 0
 
@@ -179,11 +179,9 @@ class BaseModel(nn.Module):
                     # feature_visualization(x, m.type, m.i)
                     # print(self.input_feature[1].size())
         # print(len(self.real_feature), len(self.input_feature))
-
         return x
-    
-    def do_epoch(self):
-        
+
+    def do_epoch(self):  
         for i in range(len(self.real_feature)):
             #train discriminator with real batch
             self.discriminator.zero_grad()
@@ -192,7 +190,7 @@ class BaseModel(nn.Module):
             errD_real = self.loss(output,label)
             errD_real = torch.tensor(errD_real,requires_grad=True) 
             errD_real.backward()
-            #D_x = output.mean().item()
+            D_x = output.mean().item()
 
             #train generator wwith all-fake batch
             #print(self.input_feature[i].size())
@@ -203,7 +201,7 @@ class BaseModel(nn.Module):
             errD_fake = self.loss(output, label)
             errD_fake = torch.tensor(errD_fake,requires_grad=True)
             errD_fake.backward()
-            #D_G_z1 = output.mean().item()
+            D_G_z1 = output.mean().item()
 
             errD = errD_real + errD_fake
 
@@ -217,14 +215,15 @@ class BaseModel(nn.Module):
             errG = self.loss(output,label)
             errG = torch.tensor(errG,requires_grad=True)
             errG.backward()
-            #D_G_z2 = output.mean().item()
+            D_G_z2 = output.mean().item()
 
             self.gen_optimizer.step() 
             
             self.G_losses.append(errG.item())
             self.D_losses.append(errD.item())
 
-            print("Epoch: {}/{} , Loss_D : {} , Loss_G : {}".format(self.epoch_counter, self.epoch , errD, errG))
+            #print("Epoch: {}/{}".format(self.epoch_counter, self.epoch))
+            print("Epoch: {}/{} , Loss_D : {} , Loss_G : {}, D_x : {}, D_G_z1 : {}, D_G_z2 : {}".format(self.epoch_counter, self.epoch , errD, errG, D_x, D_G_z1,D_G_z2 ))
 
         self.batch_counter += 1
         if self.batch_counter == int(self.size_dataset/self.batch_size)+1:
@@ -241,12 +240,7 @@ class BaseModel(nn.Module):
             plt.plot(self.D_losses, label = "D")
             plt.legend()
             plt.show()
-            plt.savefig(self.graph_path)
-
-
-
-        
-         
+            plt.savefig(self.graph_path) 
 
     def _profile_one_layer(self, m, x, dt):
         c = m == self.model[-1]  # is final layer, copy input as inplace fix
