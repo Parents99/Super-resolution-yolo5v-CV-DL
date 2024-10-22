@@ -27,6 +27,8 @@ Our project is built on the YOLOv5 architecture, which consists of three main co
 
 We integrated a DCGAN (Deep Convolutional GAN) into the YOLOv5 architecture to perform Super-Resolution on feature maps extracted from the Backbone. The SR technique helps amplify small features and improve the model’s ability to detect small weapons such as knives and pistols.
 
+![Rilevamento di armi](SRarchitettura "Struttura SuperYolo")
+
 ### Training
 We used a custom dataset that includes labeled images of people handling knives and pistols. The dataset contains images in different resolutions: 1280x720 and 416x416 (focused on people). We trained YOLOv5 with images resized to 224x224, 320x320, 416x416, and 512x512.
 
