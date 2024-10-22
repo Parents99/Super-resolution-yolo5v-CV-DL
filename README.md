@@ -6,18 +6,6 @@ In the field of object detection, accurately identifying small objects remains a
 
 Our approach aims to double the size of feature maps, enabling detection models to better identify smaller objects. The final objective is to develop an optimized detection model that will be deployed on highly compact edge devices, such as the Jetson Nano. These devices are known for their limited computational resources, requiring real-time object detection, which is why we chose YOLOv5 as our model. We focused on detecting two types of weapons—knives and pistols—from surveillance camera footage.
 
-The framework and scripts developed for this project are available in this GitHub repository.
-
-## State of the Art
-
-The need for lightweight frameworks on edge devices for real-time applications, such as weapon detection in video surveillance, has been well-documented in various research papers. One such work, *A Deep-Learning Framework Running on Edge Devices for Handgun and Knife Detection*, highlights the necessity of using efficient object detection models like YOLO for edge devices, which can operate at 3-5 frames per second (FPS).
-
-In our research, we drew inspiration from two main articles:
-- *Better to Follow, Follow to Be Better: Towards Precise Supervision of Feature Super-Resolution for Small Object Detection* [2], which presents an innovative approach for feature extraction and amplification using a Generative Adversarial Network (GAN).
-- *SuperYOLO: Super Resolution Assisted Object Detection in Multimodal Remote Sensing Imagery* [3], which modifies the YOLOv5 architecture to integrate SR techniques between its Backbone and Head.
-
-We customized these approaches to suit our specific requirements and developed a unique solution for small weapon detection on edge devices.
-
 ## Materials and Methods
 
 Our project is built on the YOLOv5 architecture, which consists of three main components:
